@@ -1,0 +1,49 @@
+version: '3.8'
+services:
+  radar1:
+    image: mysql:8.0
+    container_name: radar1-db
+    ports:
+      - "33061:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: SuperSecureMilitaryPassword
+      MYSQL_DATABASE: radar1_db
+    volumes:
+      - ./db/radar1/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  radar2:
+    image: mysql:8.0
+    container_name: radar2-db
+    ports:
+      - "33062:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: SuperSecureMilitaryPassword
+      MYSQL_DATABASE: radar2_db
+    volumes:
+      - ./db/radar2/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  radar3:
+    image: mysql:8.0
+    container_name: radar3-db
+    ports:
+      - "33063:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: SuperSecureMilitaryPassword
+      MYSQL_DATABASE: radar3_db
+    volumes:
+      - ./db/radar3/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 5

@@ -7,32 +7,32 @@ USE radar_db;
 -- Default project schema.
 
 CREATE TABLE USER_GROUP(
-    group_id INT PRIMARY KEY,
+    _id INT PRIMARY KEY,
     group_name VARCHAR(50),
     description VARCHAR(255)
 );
 
 CREATE TABLE USER_ACCOUNT(
-    user_id INT PRIMARY KEY,
+    _id INT PRIMARY KEY,
     group_id INT,
     username VARCHAR(50),
     password_hash VARCHAR(255),
     radar_station INT,
-    FOREIGN KEY (group_id) REFERENCES USER_GROUP(group_id)
+    FOREIGN KEY (group_id) REFERENCES USER_GROUP(_id)
 );
 
 CREATE TABLE PERMISSION(
-    permission_id INT PRIMARY KEY,
+    _id INT PRIMARY KEY,
     group_id INT,
     can_select BOOLEAN,
     can_insert BOOLEAN,
     can_update BOOLEAN,
     can_delete BOOLEAN,
-    FOREIGN KEY (group_id) REFERENCES USER_GROUP(group_id)
+    FOREIGN KEY (group_id) REFERENCES USER_GROUP(_id)
 );
 
 CREATE TABLE RADAR_DETECTION_1(
-    detection_id INT PRIMARY KEY,
+    _id INT PRIMARY KEY,
     radar_id INT,
     timestamp DATETIME,
     x FLOAT,
@@ -42,20 +42,20 @@ CREATE TABLE RADAR_DETECTION_1(
 );
 
 CREATE TABLE AUDIT_LOG_1(
-    log_id BIGINT PRIMARY KEY,
+    _id BIGINT PRIMARY KEY,
     timestamp DATETIME,
     user_id INT,
     operation VARCHAR(20),
     radar_station INT,
     table_name VARCHAR(50),
     description VARCHAR(255),
-    FOREIGN KEY (user_id) REFERENCES USER_ACCOUNT(user_id)
+    FOREIGN KEY (user_id) REFERENCES USER_ACCOUNT(_id)
 );
 
 -- Sample data insertion.
 -- USER_GROUP, USER_ACCOUNT, PERMISSION tables are the same and RADAR_DETECTION_1, AUDIT_LOG_1 tables is different.
 
-INSERT INTO USER_GROUP (group_id, group_name, description) VALUES
+INSERT INTO USER_GROUP (_id, group_name, description) VALUES
 (1,'Admins','System Administrators'),
 (2,'Operators','Basic Radar Operators'),
 (3,'Analysts','Radar Data Analysts'),
@@ -67,7 +67,7 @@ INSERT INTO USER_GROUP (group_id, group_name, description) VALUES
 (9,'Custom9_1','Custom Group 9 for DB _1'),
 (10,'Custom10_1','Custom Group 10 for DB _1');
 
-INSERT INTO USER_ACCOUNT (user_id, group_id, username, password_hash, radar_station) VALUES
+INSERT INTO USER_ACCOUNT (_id, group_id, username, password_hash, radar_station) VALUES
 (1,1,'admin','hash_admin',1),
 (2,2,'operator1','hash_op1',1),
 (3,2,'operator2','hash_op2',1),
@@ -79,7 +79,7 @@ INSERT INTO USER_ACCOUNT (user_id, group_id, username, password_hash, radar_stat
 (9,9,'user9_1','hash9_1',1),
 (10,10,'user10_1','hash10_1',1);
 
-INSERT INTO PERMISSION (permission_id, group_id, can_select, can_insert, can_update, can_delete) VALUES
+INSERT INTO PERMISSION (_id, group_id, can_select, can_insert, can_update, can_delete) VALUES
 (1,1,TRUE,TRUE,TRUE,TRUE),
 (2,2,TRUE,FALSE,FALSE,FALSE),
 (3,3,TRUE,FALSE,TRUE,FALSE),
@@ -91,7 +91,7 @@ INSERT INTO PERMISSION (permission_id, group_id, can_select, can_insert, can_upd
 (9,9,FALSE,TRUE,TRUE,FALSE),
 (10,10,TRUE,FALSE,TRUE,TRUE);
 
-INSERT INTO RADAR_DETECTION_1 (detection_id, radar_id, timestamp, x, y, z, reflection_rate) VALUES
+INSERT INTO RADAR_DETECTION_1 (_id, radar_id, timestamp, x, y, z, reflection_rate) VALUES
 (1,1,'2025-01-01 00:00:01',10,20,30,0.85),
 (2,1,'2025-01-01 00:00:02',11,21,31,0.80),
 (3,1,'2025-01-01 00:00:03',12,22,32,0.90),
@@ -103,7 +103,7 @@ INSERT INTO RADAR_DETECTION_1 (detection_id, radar_id, timestamp, x, y, z, refle
 (9,1,'2025-01-01 00:00:09',23,33,43,0.64),
 (10,1,'2025-01-01 00:00:10',24,34,44,0.65);
 
-INSERT INTO AUDIT_LOG_1 (log_id, timestamp, user_id, operation, radar_station, table_name, description) VALUES
+INSERT INTO AUDIT_LOG_1 (_id, timestamp, user_id, operation, radar_station, table_name, description) VALUES
 (1,'2025-01-01 10:00:00',1,'LOGIN',1,'USER_ACCOUNT','Admin logged in'),
 (2,'2025-01-01 10:01:00',2,'SELECT',1,'RADAR_DETECTION','Operator queried radar data'),
 (3,'2025-01-01 10:02:00',3,'SELECT',1,'RADAR_DETECTION','Operator2 queried radar data'),

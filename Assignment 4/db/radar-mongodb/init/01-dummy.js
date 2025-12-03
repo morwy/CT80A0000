@@ -1,0 +1,1 @@
+// This file is required to allow MongoDB to properly create default root user.

@@ -16,15 +16,20 @@ services:
       retries: 5
 
   dynamodb:
-    image: amazon/dynamodb-local:3.1.0
-    container_name: radar-dynamodb
+    image: mongo:6.0
+    container_name: radar-mongodb
+    restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: SuperSecureMilitaryPassword
     volumes:
-      - ./db/radar-dynamodb:/data:rw
+      - ./db/radar-mongodb/data:/data/db:rw
+      - ./db/radar-mongodb/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8000"]
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')", "-u", "root", "-p", "SuperSecureMilitaryPassword", "--authenticationDatabase", "admin"]
       interval: 5s
-      timeout: 3s
+      timeout: 5s
       retries: 5
-      start_period: 5s
+      start_period: 10s

@@ -2,6 +2,7 @@
 
 import logging
 import os
+import shutil
 import subprocess
 
 if __name__ == "__main__":
@@ -14,28 +15,24 @@ if __name__ == "__main__":
 
     result = subprocess.run(
         ["docker", "compose", "down"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
         cwd=current_directory,
         text=True,
         check=True,
     )
 
-    logging.debug("STDOUT / docker compose down: %s", result.stdout)
-    logging.debug("STDERR / docker compose down: %s", result.stderr)
+    mongodb_data_path = os.path.join(current_directory, "db", "radar-mongodb", "data")
+    if os.path.exists(mongodb_data_path):
+        logging.debug("Removing MongoDB data directory: %s", mongodb_data_path)
+        shutil.rmtree(mongodb_data_path)
+        os.makedirs(mongodb_data_path, exist_ok=True)
 
     logging.debug("Recreating and starting Docker containers.")
 
     result = subprocess.run(
         ["docker", "compose", "up", "-d"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
         cwd=current_directory,
         text=True,
         check=True,
     )
-
-    logging.debug("STDOUT / docker compose up: %s", result.stdout)
-    logging.debug("STDERR / docker compose up: %s", result.stderr)
 
     logging.info("Databases recreated and Docker containers started successfully.")

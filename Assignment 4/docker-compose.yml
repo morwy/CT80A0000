@@ -6,7 +6,7 @@ services:
       - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: SuperSecureMilitaryPassword
-      MYSQL_DATABASE: mysql_db
+      MYSQL_DATABASE: radar_db
     volumes:
       - ./db/radar-mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:

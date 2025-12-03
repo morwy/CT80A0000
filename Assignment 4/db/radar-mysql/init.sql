@@ -6,16 +6,6 @@ USE radar_db;
 
 -- Default project schema.
 
-CREATE TABLE RADAR_DETECTION(
-    detection_id INT PRIMARY KEY,
-    radar_id INT,
-    timestamp DATETIME,
-    x FLOAT,
-    y FLOAT,
-    z FLOAT,
-    reflection_rate FLOAT
-);
-
 CREATE TABLE USER_GROUP(
     group_id INT PRIMARY KEY,
     group_name VARCHAR(50),
@@ -31,7 +21,7 @@ CREATE TABLE USER_ACCOUNT(
     FOREIGN KEY (group_id) REFERENCES USER_GROUP(group_id)
 );
 
-CREATE TABLE PERMISSION_1(
+CREATE TABLE PERMISSION(
     permission_id INT PRIMARY KEY,
     group_id INT,
     can_select BOOLEAN,
@@ -39,6 +29,16 @@ CREATE TABLE PERMISSION_1(
     can_update BOOLEAN,
     can_delete BOOLEAN,
     FOREIGN KEY (group_id) REFERENCES USER_GROUP(group_id)
+);
+
+CREATE TABLE RADAR_DETECTION_1(
+    detection_id INT PRIMARY KEY,
+    radar_id INT,
+    timestamp DATETIME,
+    x FLOAT,
+    y FLOAT,
+    z FLOAT,
+    reflection_rate FLOAT
 );
 
 CREATE TABLE AUDIT_LOG_1(

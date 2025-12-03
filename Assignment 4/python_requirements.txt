@@ -1,3 +1,7 @@
 docker==7.1.0
 mysql-connector-python==9.4.0
 boto3==1.42.1
+
+# Additionally, the code requires following applications available in terminal:
+# - wget (brew install wget)
+# - awscli (brew install awscli)

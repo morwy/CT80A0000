@@ -243,25 +243,22 @@ class FrontendApplication:
             logging.info("Selected action: %s", selected_action.value)
 
             if selected_action == Action.SHOW_DATA:
-                self.__show_data(table_name)
-            elif selected_action == Action.INSERT_DATA:
-                logging.info(
-                    "Inserting data into table '%s' (not implemented).",
-                    table_name,
+                logging.info("Showing data from table '%s'", table_name)
+                show_both = bool(
+                    input("Show data from both databases? (y/n): ").strip().lower()
+                    == "y"
                 )
+                self.__show_data(table_name, show_both=show_both)
+            elif selected_action == Action.INSERT_DATA:
+                self.__insert_data(table_name)
             elif selected_action == Action.UPDATE_DATA:
                 self.__update_data(table_name)
             elif selected_action == Action.DELETE_DATA:
-                logging.info(
-                    "Deleting data from table '%s' (not implemented).",
-                    table_name,
-                )
+                self.__delete_data(table_name)
 
             break
 
-    def __show_data(self, table_name: str):
-        logging.info("Showing data from table '%s'", table_name)
-
+    def __show_data(self, table_name: str, show_both: bool = False):
         for db_type, conn in self.__db_connections.items():
             tables = self.__get_tables_in_database(db_type)
             if table_name in tables:
@@ -276,6 +273,9 @@ class FrontendApplication:
                     rows = cursor.fetchall()
                     for row in rows:
                         logging.info("(%s)", ", ".join(str(value) for value in row))
+
+                    if not show_both:
+                        break
 
                 elif db_type == DatabaseType.MONGODB:
                     database_name = self.__databases[0].name
@@ -293,54 +293,122 @@ class FrontendApplication:
                             "(%s)", ", ".join(str(value) for value in doc.values())
                         )
 
-    def __update_data(self, database_name: str, table_name: str):
-        logging.info(
-            "Updating data in database '%s' and table '%s'", database_name, table_name
-        )
+                    if not show_both:
+                        break
 
-        conn = self.__db_connections.get(database_name)
-        if conn is None or not conn.is_connected():
-            logging.error("No active connection to database '%s'", database_name)
-            return
+    def __insert_data(self, table_name: str):
+        logging.info("Inserting data to table '%s'", table_name)
+
+        logging.info("Available entries:")
+
+        self.__show_data(table_name)
+
+        values = input("Enter values separated by commas: ")
+        values_list = [value.strip() for value in values.split(",")]
+
+        for db_type, conn in self.__db_connections.items():
+            tables = self.__get_tables_in_database(db_type)
+            if table_name in tables:
+                if db_type == DatabaseType.MYSQL:
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        f"INSERT INTO {table_name} () VALUES ({', '.join(['%s'] * len(values_list))})",
+                        values_list,
+                    )
+                    conn.commit()
+
+                elif db_type == DatabaseType.MONGODB:
+                    database_name = self.__databases[0].name
+                    db = conn[database_name]
+                    collection = db[table_name.lower()]
+                    columns = collection.find_one().keys()
+                    document = {
+                        c: value
+                        for i, (c, value) in enumerate(zip(columns, values_list))
+                    }
+                    collection.insert_one(document)
+
+        logging.info("Entry inserted successfully.")
+
+        logging.info("Updated entries:")
+
+        self.__show_data(table_name)
+
+        input("Press any button to continue...")
+
+    def __update_data(self, table_name: str):
+        logging.info("Updating data in table '%s'", table_name)
 
         logging.info("Available entries to update:")
 
-        cursor = conn.cursor()
+        self.__show_data(table_name)
 
-        cursor.execute(
-            """
-                SELECT COLUMN_NAME
-                FROM INFORMATION_SCHEMA.COLUMNS
-                WHERE TABLE_SCHEMA = %s
-                AND TABLE_NAME = %s
-                AND COLUMN_KEY = 'PRI';
-            """,
-            (database_name, table_name),
-        )
-
-        pk_columns = [row[0] for row in cursor.fetchall()]
-
-        cursor.execute(f"DESCRIBE {table_name};")
-        columns = [row[0] for row in cursor.fetchall()]
-        logging.info("(%s)", ", ".join(columns))
-
-        cursor.execute(f"SELECT * FROM {table_name}")
-        rows = cursor.fetchall()
-        for row in rows:
-            logging.info(row)
-
-        selected_entry_id = input("Enter the ID of the entry to update: ")
-        selected_entry_column = input("Enter the column name to update: ")
+        selected_entry_id = int(input("Enter the ID of the entry to update: "))
+        selected_entry_column = input("Enter the column name to update: ").lower()
 
         new_value = input("Enter the new value: ")
 
-        cursor.execute(
-            f"UPDATE {table_name} SET {selected_entry_column} = %s WHERE {pk_columns[0]} = %s",
-            (new_value, selected_entry_id),
-        )
-        conn.commit()
+        for db_type, conn in self.__db_connections.items():
+            tables = self.__get_tables_in_database(db_type)
+            if table_name in tables:
+                if db_type == DatabaseType.MYSQL:
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        f"UPDATE {table_name} SET {selected_entry_column} = %s WHERE _id = %s",
+                        (new_value, selected_entry_id),
+                    )
+                    conn.commit()
+
+                elif db_type == DatabaseType.MONGODB:
+                    database_name = self.__databases[0].name
+                    db = conn[database_name]
+                    collection = db[table_name.lower()]
+                    collection.update_one(
+                        {"_id": int(selected_entry_id)},
+                        {"$set": {selected_entry_column: new_value}},
+                    )
 
         logging.info("Entry updated successfully.")
+
+        logging.info("Updated entries:")
+
+        self.__show_data(table_name)
+
+        input("Press any button to continue...")
+
+    def __delete_data(self, table_name: str):
+        logging.info("Deleting data from table '%s'", table_name)
+
+        logging.info("Available entries to delete:")
+
+        self.__show_data(table_name)
+
+        selected_entry_id = int(input("Enter the ID of the entry to delete: "))
+
+        for db_type, conn in self.__db_connections.items():
+            tables = self.__get_tables_in_database(db_type)
+            if table_name in tables:
+                if db_type == DatabaseType.MYSQL:
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        f"DELETE FROM {table_name} WHERE _id = %s",
+                        (selected_entry_id,),
+                    )
+                    conn.commit()
+
+                elif db_type == DatabaseType.MONGODB:
+                    database_name = self.__databases[0].name
+                    db = conn[database_name]
+                    collection = db[table_name.lower()]
+                    collection.delete_one({"_id": int(selected_entry_id)})
+
+        logging.info("Entry deleted successfully.")
+
+        logging.info("Updated entries:")
+
+        self.__show_data(table_name)
+
+        input("Press any button to continue...")
 
 
 if __name__ == "__main__":

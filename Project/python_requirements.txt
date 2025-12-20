@@ -1,2 +1,2 @@
-docker==7.1.0
 mysql-connector-python==9.5.0
+textual==6.11.0

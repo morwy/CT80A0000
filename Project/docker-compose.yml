@@ -1,3 +1,13 @@
+# --------------------------------------------------------------------------------------------------
+#
+# Docker and cloud technologies are allowed.
+#
+# Databases based on the number of people in the group: 
+#   3 people = 3 databases, 
+#   4 people = 4 databases, 
+#   5 people = 5 databases
+#
+# --------------------------------------------------------------------------------------------------
 services:
   radar1:
     image: mysql:8.0

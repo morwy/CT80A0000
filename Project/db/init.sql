@@ -10,7 +10,7 @@ USE radar_db;
 --      roughly +4 attributes (sometimes you can have less if they are joining tables).
 
 CREATE TABLE RADAR_DETECTION(
-    detection_id INT PRIMARY KEY,
+    detection_id INT PRIMARY KEY AUTO_INCREMENT,
     radar_id INT,
     timestamp DATETIME,
     x FLOAT,
@@ -20,13 +20,13 @@ CREATE TABLE RADAR_DETECTION(
 );
 
 CREATE TABLE USER_GROUP(
-    group_id INT PRIMARY KEY,
+    group_id INT PRIMARY KEY AUTO_INCREMENT,
     group_name VARCHAR(50),
     description VARCHAR(255)
 );
 
 CREATE TABLE USER_ACCOUNT(
-    user_id INT PRIMARY KEY,
+    user_id INT PRIMARY KEY AUTO_INCREMENT,
     group_id INT,
     username VARCHAR(50),
     password_hash VARCHAR(255),
@@ -35,7 +35,7 @@ CREATE TABLE USER_ACCOUNT(
 );
 
 CREATE TABLE PERMISSION(
-    permission_id INT PRIMARY KEY,
+    permission_id INT PRIMARY KEY AUTO_INCREMENT,
     group_id INT,
     can_select BOOLEAN,
     can_insert BOOLEAN,
@@ -45,7 +45,7 @@ CREATE TABLE PERMISSION(
 );
 
 CREATE TABLE AUDIT_LOG(
-    log_id BIGINT PRIMARY KEY,
+    log_id BIGINT PRIMARY KEY AUTO_INCREMENT,
     timestamp DATETIME,
     user_id INT,
     operation VARCHAR(20),

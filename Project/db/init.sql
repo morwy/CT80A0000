@@ -57,42 +57,133 @@ CREATE TABLE AUDIT_LOG(
 
 -- Sample data insertion.
 -- Each table should contain a minimum of 30 data entries.
+-- Some redundant data and bloating is present...
 
 INSERT INTO USER_GROUP (group_id, group_name, description) VALUES
-(1,'Admins','System Administrators'),
-(2,'Operators','Basic Radar Operators'),
-(3,'Analysts','Radar Data Analysts'),
-(4,'Guests','Limited Access Users'),
-(5,'Maintenance','Hardware/Software Technicians'),
-(6,'Custom6_1','Custom Group 6 for DB _1'),
-(7,'Custom7_1','Custom Group 7 for DB _1'),
-(8,'Custom8_1','Custom Group 8 for DB _1'),
-(9,'Custom9_1','Custom Group 9 for DB _1'),
-(10,'Custom10_1','Custom Group 10 for DB _1');
+(1,'Unauthorized','No Access Users'),
+(2,'Radars','Radars themselves'),
+
+(3,'High-Rank Officers @ RS1','Full Access Users located at Radar Station 1'),
+(4,'Officers @ RS1','Limited Access Users located at Radar Station 1'),
+(5,'Soldiers @ RS1','Basic Access Users located at Radar Station 1'),
+(6,'Technicians @ RS1','Maintenance Users located at Radar Station 1'),
+(7,'Administrators @ RS1','Admin Users located at Radar Station 1'),
+
+(8,'High-Rank Officers @ RS2','Full Access Users located at Radar Station 2'),
+(9,'Officers @ RS2','Limited Access Users located at Radar Station 2'),
+(10,'Soldiers @ RS2','Basic Access Users located at Radar Station 2'),
+(11,'Technicians @ RS2','Maintenance Users located at Radar Station 2'),
+(12,'Administrators @ RS2','Admin Users located at Radar Station 2'),
+
+(13,'High-Rank Officers @ RS3','Full Access Users located at Radar Station 3'),
+(14,'Officers @ RS3','Limited Access Users located at Radar Station 3'),
+(15,'Soldiers @ RS3','Basic Access Users located at Radar Station 3'),
+(16,'Technicians @ RS3','Maintenance Users located at Radar Station 3'),
+(17,'Administrators @ RS3','Admin Users located at Radar Station 3'),
+
+(18,'High-Rank Officers @ RS4','Full Access Users located at Radar Station 4'),
+(19,'Officers @ RS4','Limited Access Users located at Radar Station 4'),
+(20,'Soldiers @ RS4','Basic Access Users located at Radar Station 4'),
+(21,'Technicians @ RS4','Maintenance Users located at Radar Station 4'),
+(22,'Administrators @ RS4','Admin Users located at Radar Station 4'),
+
+(23,'High-Rank Officers @ RS5','Full Access Users located at Radar Station 5'),
+(24,'Officers @ RS5','Limited Access Users located at Radar Station 5'),
+(25,'Soldiers @ RS5','Basic Access Users located at Radar Station 5'),
+(26,'Technicians @ RS5','Maintenance Users located at Radar Station 5'),
+(27,'Administrators @ RS5','Admin Users located at Radar Station 5'),
+
+(28,'High-Rank Officers @ RS6','Full Access Users located at Radar Station 6'),
+(29,'Officers @ RS6','Limited Access Users located at Radar Station 6'),
+(30,'Soldiers @ RS6','Basic Access Users located at Radar Station 6'),
+(31,'Technicians @ RS6','Maintenance Users located at Radar Station 6'),
+(32,'Administrators @ RS6','Admin Users located at Radar Station 6');
 
 INSERT INTO USER_ACCOUNT (user_id, group_id, username, password_hash, radar_station) VALUES
-(1,1,'admin','hash_admin',1),
-(2,2,'operator1','hash_op1',1),
-(3,2,'operator2','hash_op2',1),
-(4,3,'analyst1','hash_an1',1),
-(5,4,'guest1','hash_guest1',1),
-(6,6,'user6_1','hash6_1',1),
-(7,7,'user7_1','hash7_1',1),
-(8,8,'user8_1','hash8_1',1),
-(9,9,'user9_1','hash9_1',1),
-(10,10,'user10_1','hash10_1',1);
+(1,1,'unauthorized_user','hash_unauthorized',0),
+
+(2,2,'radar_1','hash_radar_1',1),
+(3,2,'radar_2','hash_radar_2',2),
+(4,2,'radar_3','hash_radar_3',3),
+(5,2,'radar_4','hash_radar_4',4),
+(6,2,'radar_5','hash_radar_5',5),
+(7,2,'radar_6','hash_radar_6',6),
+
+(8,3,'high_rank_officer_rs1','hash_hro_rs1',1),
+(9,4,'officer_rs1','hash_officer_rs1',1),
+(10,5,'soldier_rs1','hash_soldier_rs1',1),
+(11,6,'technician_rs1','hash_technician_rs1',1),
+(12,7,'administrator_rs1','hash_administrator_rs1',1),
+
+(13,8,'high_rank_officer_rs2','hash_hro_rs2',2),
+(14,9,'officer_rs2','hash_officer_rs2',2),
+(15,10,'soldier_rs2','hash_soldier_rs2',2),
+(16,11,'technician_rs2','hash_technician_rs2',2),
+(17,12,'administrator_rs2','hash_administrator_rs2',2),
+
+(18,13,'high_rank_officer_rs3','hash_hro_rs3',3),
+(19,14,'officer_rs3','hash_officer_rs3',3),
+(20,15,'soldier_rs3','hash_soldier_rs3',3),
+(21,16,'technician_rs3','hash_technician_rs3',3),
+(22,17,'administrator_rs3','hash_administrator_rs3',3),
+
+(23,18,'high_rank_officer_rs4','hash_hro_rs4',4),
+(24,19,'officer_rs4','hash_officer_rs4',4),
+(25,20,'soldier_rs4','hash_soldier_rs4',4),
+(26,21,'technician_rs4','hash_technician_rs4',4),
+(27,22,'administrator_rs4','hash_administrator_rs4',4),
+
+(28,23,'high_rank_officer_rs5','hash_hro_rs5',5),
+(29,24,'officer_rs5','hash_officer_rs5',5),
+(30,25,'soldier_rs5','hash_soldier_rs5',5),
+(31,26,'technician_rs5','hash_technician_rs5',5),
+(32,27,'administrator_rs5','hash_administrator_rs5',5),
+
+(33,28,'high_rank_officer_rs6','hash_hro_rs6',6),
+(34,29,'officer_rs6','hash_officer_rs6',6),
+(35,30,'soldier_rs6','hash_soldier_rs6',6),
+(36,31,'technician_rs6','hash_technician_rs6',6),
+(37,32,'administrator_rs6','hash_administrator_rs6',6);
 
 INSERT INTO PERMISSION (permission_id, group_id, can_select, can_insert, can_update, can_delete) VALUES
-(1,1,TRUE,TRUE,TRUE,TRUE),
-(2,2,TRUE,FALSE,FALSE,FALSE),
-(3,3,TRUE,FALSE,TRUE,FALSE),
-(4,4,FALSE,FALSE,FALSE,FALSE),
-(5,5,TRUE,TRUE,FALSE,FALSE),
-(6,6,TRUE,FALSE,FALSE,TRUE),
-(7,7,FALSE,TRUE,FALSE,TRUE),
-(8,8,TRUE,TRUE,TRUE,FALSE),
-(9,9,FALSE,TRUE,TRUE,FALSE),
-(10,10,TRUE,FALSE,TRUE,TRUE);
+(1,1,FALSE,FALSE,FALSE,FALSE),
+(2,2,FALSE,TRUE,FALSE,FALSE),
+
+(3,3,TRUE,TRUE,TRUE,TRUE),
+(4,4,TRUE,TRUE,FALSE,FALSE),
+(5,5,TRUE,FALSE,FALSE,FALSE),
+(6,6,TRUE,TRUE,TRUE,FALSE),
+(7,7,TRUE,TRUE,TRUE,TRUE),
+
+(8,8,TRUE,TRUE,TRUE,TRUE),
+(9,9,TRUE,TRUE,FALSE,FALSE),
+(10,10,TRUE,FALSE,FALSE,FALSE),
+(11,11,TRUE,TRUE,TRUE,FALSE),
+(12,12,TRUE,TRUE,TRUE,TRUE),
+
+(13,13,TRUE,TRUE,TRUE,TRUE),
+(14,14,TRUE,TRUE,FALSE,FALSE),
+(15,15,TRUE,FALSE,FALSE,FALSE),
+(16,16,TRUE,TRUE,TRUE,FALSE),
+(17,17,TRUE,TRUE,TRUE,TRUE),
+
+(18,18,TRUE,TRUE,TRUE,TRUE),
+(19,19,TRUE,TRUE,FALSE,FALSE),
+(20,20,TRUE,FALSE,FALSE,FALSE),
+(21,21,TRUE,TRUE,TRUE,FALSE),
+(22,22,TRUE,TRUE,TRUE,TRUE),
+
+(23,23,TRUE,TRUE,TRUE,TRUE),
+(24,24,TRUE,TRUE,FALSE,FALSE),
+(25,25,TRUE,FALSE,FALSE,FALSE),
+(26,26,TRUE,TRUE,TRUE,FALSE),
+(27,27,TRUE,TRUE,TRUE,TRUE),
+
+(28,28,TRUE,TRUE,TRUE,TRUE),
+(29,29,TRUE,TRUE,FALSE,FALSE),
+(30,30,TRUE,FALSE,FALSE,FALSE),
+(31,31,TRUE,TRUE,TRUE,FALSE),
+(32,32,TRUE,TRUE,TRUE,TRUE);
 
 INSERT INTO RADAR_DETECTION (detection_id, radar_id, timestamp, x, y, z, reflection_rate) VALUES
 (1,1,'2025-01-01 00:00:01',10,20,30,0.85),
@@ -107,13 +198,34 @@ INSERT INTO RADAR_DETECTION (detection_id, radar_id, timestamp, x, y, z, reflect
 (10,1,'2025-01-01 00:00:10',24,34,44,0.65);
 
 INSERT INTO AUDIT_LOG (log_id, timestamp, user_id, operation, radar_station, table_name, description) VALUES
-(1,'2025-01-01 10:00:00',1,'LOGIN',1,'USER_ACCOUNT','Admin logged in'),
-(2,'2025-01-01 10:01:00',2,'SELECT',1,'RADAR_DETECTION','Operator queried radar data'),
-(3,'2025-01-01 10:02:00',3,'SELECT',1,'RADAR_DETECTION','Operator2 queried radar data'),
-(4,'2025-01-01 10:03:00',4,'UPDATE',1,'USER_ACCOUNT','Analyst updated profile'),
-(5,'2025-01-01 10:04:00',5,'LOGIN',1,'USER_ACCOUNT','Guest login'),
-(6,'2025-01-01 10:05:00',6,'LOGIN',1,'USER_ACCOUNT','Custom user6_1 login'),
-(7,'2025-01-01 10:06:00',7,'INSERT',1,'AUDIT_LOG','Custom user7_1 insert'),
-(8,'2025-01-01 10:07:00',8,'DELETE',1,'RADAR_DETECTION','Custom user8_1 delete attempt'),
-(9,'2025-01-01 10:08:00',9,'UPDATE',1,'USER_GROUP','Custom user9_1 updated group'),
-(10,'2025-01-01 10:09:00',10,'SELECT',1,'PERMISSION','Custom user10_1 select');
+(1,'2025-01-01 10:00:00',1,'LOGIN_ATTEMPT',1,'USER_ACCOUNT','Unauthorized user attempted to log in.'),
+(2,'2025-01-01 10:05:00',8,'DELETE',1,'RADAR_DETECTION','High-Rank Officer at RS1 deleted a radar detection.'),
+(3,'2025-01-01 10:10:00',9,'SELECT',1,'RADAR_DETECTION','Officer at RS1 viewed radar detections.'),
+(4,'2025-01-01 10:15:00',10,'SELECT',1,'RADAR_DETECTION','Soldier at RS1 viewed radar detections.'),
+(5,'2025-01-01 10:20:00',11,'UPDATE',1,'RADAR_DETECTION','Technician at RS1 updated a radar detection.'),
+(6,'2025-01-01 10:25:00',12,'DELETE',1,'RADAR_DETECTION','Administrator at RS1 deleted a radar detection.'),
+(7,'2025-01-01 10:30:00',13,'DELETE',2,'RADAR_DETECTION','High-Rank Officer at RS2 deleted a radar detection.'),
+(8,'2025-01-01 10:35:00',14,'SELECT',2,'RADAR_DETECTION','Officer at RS2 viewed radar detections.'),
+(9,'2025-01-01 10:40:00',15,'SELECT',2,'RADAR_DETECTION','Soldier at RS2 viewed radar detections.'),
+(10,'2025-01-01 10:45:00',16,'UPDATE',2,'RADAR_DETECTION','Technician at RS2 updated a radar detection.'),
+(11,'2025-01-01 10:50:00',17,'LOGIN_SUCCESS',2,'USER_ACCOUNT','User logged in.'),
+(12,'2025-01-01 10:55:00',2,'INSERT',1,'RADAR_DETECTION','Radar 1 inserted a new radar detection.'),
+(13,'2025-01-01 11:00:00',3,'INSERT',2,'RADAR_DETECTION','Radar 2 inserted a new radar detection.'),
+(14,'2025-01-01 11:05:00',4,'INSERT',3,'RADAR_DETECTION','Radar 3 inserted a new radar detection.'),
+(15,'2025-01-01 11:10:00',5,'INSERT',4,'RADAR_DETECTION','Radar 4 inserted a new radar detection.'),
+(16,'2025-01-01 11:15:00',6,'INSERT',5,'RADAR_DETECTION','Radar 5 inserted a new radar detection.'),
+(17,'2025-01-01 11:20:00',7,'INSERT',6,'RADAR_DETECTION','Radar 6 inserted a new radar detection.'),
+(18, '2025-01-01 11:30:00',1,'LOGIN_ATTEMPT',3,'USER_ACCOUNT','Unauthorized user attempted to log in.'),
+(19, '2025-01-01 11:25:00',1,'LOGIN_FAILURE',3,'USER_ACCOUNT','User failed to log in.'),
+(20, '2025-01-01 11:35:00',1,'LOGIN_ATTEMPT',4,'USER_ACCOUNT','Unauthorized user attempted to log in.'),
+(21, '2025-01-01 11:26:00',1,'LOGIN_FAILURE',3,'USER_ACCOUNT','User failed to log in.'),
+(22, '2025-01-01 11:40:00',1,'LOGIN_ATTEMPT',5,'USER_ACCOUNT','Unauthorized user attempted to log in.'),
+(23, '2025-01-01 11:46:00',1,'LOGIN_FAILURE',3,'USER_ACCOUNT','User failed to log in.'),
+(24, '2025-01-01 11:45:00',1,'LOGIN_ATTEMPT',6,'USER_ACCOUNT','Unauthorized user attempted to log in.'),
+(25, '2025-01-01 11:46:00',1,'LOGIN_FAILURE',3,'USER_ACCOUNT','User failed to log in.'),
+(25, '2025-01-01 11:46:00',8,'LOGOUT_SUCCESS',1,'USER_ACCOUNT','User logged out.'),
+(26, '2025-01-01 11:50:00',9,'LOGOUT_SUCCESS',2,'USER_ACCOUNT','User logged out.'),
+(27, '2025-01-01 11:55:00',10,'LOGOUT_SUCCESS',3,'USER_ACCOUNT','User logged out.'),
+(28, '2025-01-01 12:00:00',11,'LOGOUT_SUCCESS',4,'USER_ACCOUNT','User logged out.'),
+(29, '2025-01-01 12:05:00',12,'LOGOUT_SUCCESS',5,'USER_ACCOUNT','User logged out.'),
+(30, '2025-01-01 12:10:00',8,'LOGIN_SUCCESS',6,'USER_ACCOUNT','User logged in.');

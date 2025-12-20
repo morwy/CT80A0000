@@ -21,19 +21,6 @@ if __name__ == "__main__":
         check=True,
     )
 
-    result = subprocess.run(
-        [
-            "docker",
-            "volume",
-            "prune",
-            "--force",
-            "--all",
-        ],
-        cwd=current_directory,
-        text=True,
-        check=True,
-    )
-
     db1_storage_path = os.path.join(current_directory, "db", "radar1")
     if os.path.exists(db1_storage_path):
         logging.debug("Removing database storage at: %s", db1_storage_path)

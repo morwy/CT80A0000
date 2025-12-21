@@ -397,6 +397,13 @@ class MainScreen(Screen):
         """
         self.start_login()
 
+    def on_unmount(self) -> None:
+        """
+        Called when the screen is unmounted.
+        """
+        global _ARGUS_SYSTEM
+        del _ARGUS_SYSTEM
+
     @work(exclusive=True)
     async def start_login(self) -> None:
         """

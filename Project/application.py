@@ -13,10 +13,12 @@ from typing import Union
 
 import mysql.connector
 from mysql.connector import Error
+from textual import work
 from textual.app import App, ComposeResult
-from textual.containers import Vertical
-from textual.screen import Screen
-from textual.widgets import Button, Input, Static
+from textual.binding import Binding
+from textual.containers import Center, Vertical
+from textual.screen import ModalScreen, Screen
+from textual.widgets import Button, Footer, Header, Input, Static
 
 # --------------------------------------------------------------------------------------------------
 #
@@ -332,7 +334,7 @@ _ARGUS_SYSTEM = ArgusSystem()
 # UI elements
 #
 # --------------------------------------------------------------------------------------------------
-class LoginScreen(Screen):
+class LoginScreen(ModalScreen[bool]):
     """
     Login application class.
     """
@@ -344,37 +346,79 @@ class LoginScreen(Screen):
             yield Input(id="username", compact=True)
             yield Static("Password:")
             yield Input(password=True, id="password", compact=True)
-            yield Button("OK", id="ok", variant="primary", compact=True)
+            yield Button("Login", id="login", variant="primary", compact=True)
             yield Static("", id="status")
 
     def action_submit(self) -> None:
         """
         Handles the submit action.
         """
-
         username = self.query_one("#username", Input).value
         password = self.query_one("#password", Input).value
         status = self.query_one("#status", Static)
 
         if _ARGUS_SYSTEM.login(username, password):
-            self.app.pop_screen()
+            self.dismiss(True)
         else:
             status.update("Access denied")
+
+    def action_cancel(self) -> None:
+        """
+        Handles the cancel action.
+        """
+        self.dismiss(False)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """
         Handles button press events.
         """
-        if event.button.id == "ok":
+        if event.button.id == "login":
             self.action_submit()
 
 
-class LoginApplication(App):
+class MainScreen(Screen):
+    """
+    Main application screen.
+    """
+
+    BINDINGS = [
+        Binding("t", "test", "Test Action"),
+        Binding("escape", "quit", "Quit"),
+    ]
+
+    def compose(self) -> ComposeResult:
+        yield Header(name="ARGUS PANOPTES RADAR SYSTEM", show_clock=True)
+        yield Center(Static("MAIN APPLICATION\nPress Esc to quit"))
+        yield Footer()
+
+    def on_mount(self) -> None:
+        """
+        Called when the screen is mounted.
+        """
+        self.start_login()
+
+    @work(exclusive=True)
+    async def start_login(self) -> None:
+        """
+        Starts the login process.
+        """
+        ok = await self.app.push_screen_wait(LoginScreen())
+        if not ok:
+            self.app.exit(1)
+
+
+class MainApplication(App):
     """
     Login application class.
     """
 
+    TITLE = "ARGUS PANOPTES RADAR SYSTEM"
+
     CSS = """
+    LoginScreen {
+        background: #181818;
+    }
+    
     Screen {
         align: center middle;
     }
@@ -406,14 +450,11 @@ class LoginApplication(App):
     }
     """
 
-    def __init__(self):
-        super().__init__()
-
     def on_mount(self) -> None:
         """
         Called when the application is mounted.
         """
-        self.push_screen(LoginScreen())
+        self.push_screen(MainScreen())
 
 
 # --------------------------------------------------------------------------------------------------
@@ -422,4 +463,4 @@ class LoginApplication(App):
 #
 # --------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
-    LoginApplication().run()
+    MainApplication().run()

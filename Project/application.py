@@ -12,6 +12,7 @@ from datetime import datetime
 from typing import List, Union
 
 import mysql.connector
+import plotext as plt  # type: ignore
 from mysql.connector import Error
 from textual import work
 from textual.app import App, ComposeResult
@@ -904,6 +905,83 @@ class DetectionScreen(Screen):
         self.app.pop_screen()
 
 
+class ChartScreen(Screen):
+    """
+    Screen to display a radar detection as a XY chart.
+    """
+
+    BINDINGS = [
+        Binding("escape", "close", "Close"),
+    ]
+
+    def __init__(self, detections: List[_RadarDetection]):
+        super().__init__()
+        self.detections: List[_RadarDetection] = detections
+
+    def __reflection_to_symbol(self, rate: float) -> str:
+        if rate < 0.3:
+            return "."
+        elif rate < 0.6:
+            return "o"
+        elif rate < 0.8:
+            return "O"
+        else:
+            return "X"
+
+    def compose(self) -> ComposeResult:
+        yield Header(show_clock=True)
+        yield Static("", id="chart", expand=True)
+        yield Footer()
+
+    def on_mount(self):
+        """
+        Called when the screen is mounted.
+        """
+        self.render_chart()
+
+    def on_resize(self, _):
+        """
+        Called when the screen is resized.
+        """
+        self.render_chart()
+
+    def render_chart(self):
+        """
+        Renders the XY chart of radar detections.
+        """
+        x_data = [detection.x for detection in self.detections]
+        y_data = [detection.y for detection in self.detections]
+        z_data = [detection.z for detection in self.detections]
+
+        chart_container = self.query_one("#chart", Static)
+
+        plt.clear_data()
+        plt.clear_figure()
+
+        chart_width = self.size.width - 4
+        chart_height = self.size.height - 4
+
+        plt.plot_size(chart_width, chart_height)
+        plt.theme("clear")
+        plt.title("XY Chart")
+        plt.xlabel("X")
+        plt.ylabel("Y")
+
+        plt.scatter(x_data, y_data, color=z_data, marker="dot")
+        plt.grid(True)
+
+        chart = plt.build()
+        plt.clear_data()
+
+        chart_container.update(chart)
+
+    def action_close(self) -> None:
+        """
+        Closes the log screen.
+        """
+        self.app.pop_screen()
+
+
 class ConfirmExitScreen(ModalScreen[bool]):
     """
     Confirmation screen for exiting the application.
@@ -1081,6 +1159,9 @@ class MainScreen(Screen):
             )
             return
 
+        detections = _ARGUS_SYSTEM.detections()
+        self.app.push_screen(ChartScreen(detections))
+
     def action_logout(self) -> None:
         """
         Logs out the current user.
@@ -1163,6 +1244,11 @@ class MainApplication(App):
         margin-top: 1;
         height: 1;
         text-align: center;
+    }
+
+    #chart {
+        width: 100%;
+        height: 100%;
     }
     """
 

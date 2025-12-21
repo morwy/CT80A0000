@@ -9,16 +9,16 @@ import logging
 import os
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Union
+from typing import List, Union
 
 import mysql.connector
 from mysql.connector import Error
 from textual import work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import CenterMiddle, Vertical
+from textual.containers import Center, CenterMiddle, Vertical
 from textual.screen import ModalScreen, Screen
-from textual.widgets import Button, Footer, Header, Input, Static
+from textual.widgets import Button, DataTable, Footer, Header, Input, Static
 
 # --------------------------------------------------------------------------------------------------
 #
@@ -343,6 +343,58 @@ class ArgusSystem:
 
         return self._user.permissions
 
+    def audit_logs(self) -> List[_AuditLogEntry]:
+        """
+        Retrieves audit log entries from the database.
+
+        :return: A list of audit log entries.
+        """
+        self.log(
+            "AUDIT_LOG",
+            "LOG_RETRIEVAL_ATTEMPT",
+            "Retrieving audit logs.",
+        )
+
+        if self.__db_connection is None or not self.__db_connection.is_connected():
+            _LOGGER.error("Database connection is not established.")
+            return []
+
+        try:
+            cursor = self.__db_connection.cursor()
+            query = "SELECT log_id, timestamp, user_id, operation, radar_station, table_name, description FROM AUDIT_LOG ORDER BY log_id DESC;"
+            cursor.execute(query)
+            log_entries = cursor.fetchall()
+
+            audit_logs: List[_AuditLogEntry] = []
+
+            for entry in log_entries:
+                log = _AuditLogEntry()
+                log.log_id = int(entry[0])  # type: ignore
+                log.timestamp = entry[1]  # type: ignore
+                log.user_id = int(entry[2]) if entry[2] is not None else None  # type: ignore
+                log.operation = entry[3]  # type: ignore
+                log.radar_station = int(entry[4])  # type: ignore
+                log.table_name = entry[5]  # type: ignore
+                log.description = entry[6]  # type: ignore
+
+                audit_logs.append(log)
+
+            self.log(
+                "AUDIT_LOG",
+                "LOG_RETRIEVAL_SUCCESS",
+                f"Retrieved {len(audit_logs)} audit log entries.",
+            )
+
+            return audit_logs
+
+        except Error as e:
+            self.log(
+                "AUDIT_LOG",
+                "LOG_RETRIEVAL_ERROR",
+                f"Error retrieving audit logs: {e}",
+            )
+            return []
+
 
 _ARGUS_SYSTEM = ArgusSystem()
 
@@ -392,6 +444,63 @@ class LoginScreen(ModalScreen[bool]):
         """
         if event.button.id == "login":
             self.action_submit()
+
+
+class LogScreen(Screen):
+    """
+    Screen to display audit logs.
+    """
+
+    BINDINGS = [
+        Binding("escape", "close", "Close"),
+        Binding("q", "close", "Close"),
+        Binding("ctrl+q", "close", "Close"),
+    ]
+
+    def compose(self):
+        yield Header(show_clock=True)
+        yield Center(DataTable(id="log_table"))
+        yield Footer()
+
+    @work(exclusive=True)
+    async def load_data(self, logs: List[_AuditLogEntry]) -> None:
+        """
+        Loads audit log data into the table.
+
+        :param logs: List of audit log entries to display.
+        """
+        columns = [
+            "ID",
+            "Timestamp",
+            "User ID",
+            "Operation",
+            "Radar Station",
+            "Table Name",
+            "Description",
+        ]
+
+        table = self.query_one("#log_table", DataTable)
+
+        table.clear(columns=True)
+        table.add_columns(*columns)
+
+        for log in logs:
+            rows = [
+                str(log.log_id),
+                str(log.timestamp),
+                str(log.user_id),
+                str(log.operation),
+                str(log.radar_station),
+                str(log.table_name),
+                str(log.description),
+            ]
+            table.add_row(*rows)
+
+    def action_close(self) -> None:
+        """
+        Closes the log screen.
+        """
+        self.app.pop_screen()
 
 
 class MainScreen(Screen):
@@ -484,6 +593,12 @@ class MainScreen(Screen):
                 message="You do not have permission to view logs.", severity="error"
             )
             return
+
+        logs = _ARGUS_SYSTEM.audit_logs()
+
+        log_screen = LogScreen()
+        self.app.push_screen(log_screen)
+        log_screen.load_data(logs)
 
     def action_detections(self) -> None:
         """

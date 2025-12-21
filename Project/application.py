@@ -16,7 +16,7 @@ from mysql.connector import Error
 from textual import work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Center, CenterMiddle, Vertical
+from textual.containers import Center, CenterMiddle, Horizontal, Vertical
 from textual.screen import ModalScreen, Screen
 from textual.widgets import Button, DataTable, Footer, Header, Input, Static
 
@@ -612,6 +612,46 @@ class DetectionScreen(Screen):
         self.app.pop_screen()
 
 
+class ConfirmExitScreen(ModalScreen[bool]):
+    """
+    Confirmation screen for exiting the application.
+    """
+
+    BINDINGS = [
+        Binding("y", "yes", "Yes"),
+        Binding("n", "no", "No"),
+        Binding("escape", "no", "Cancel"),
+    ]
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="confirm-exit-box"):
+            yield Static("Do you really want to exit?", id="question")
+            with Horizontal(id="buttons"):
+                yield Button("Yes", id="yes", variant="error", compact=True)
+                yield Button("No", id="no", variant="primary", compact=True)
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """
+        Handles button press events.
+        """
+        if event.button.id == "yes":
+            self.dismiss(True)
+        else:
+            self.dismiss(False)
+
+    def action_yes(self) -> None:
+        """
+        Confirms exit.
+        """
+        self.dismiss(True)
+
+    def action_no(self) -> None:
+        """
+        Cancels exit.
+        """
+        self.dismiss(False)
+
+
 class MainScreen(Screen):
     """
     Main application screen.
@@ -679,8 +719,8 @@ class MainScreen(Screen):
         """
         Starts the login process.
         """
-        authenticated = await self.app.push_screen_wait(LoginScreen())
-        if not authenticated:
+        is_user_authenticated = await self.app.push_screen_wait(LoginScreen())
+        if not is_user_authenticated:
             self.app.exit(1)
 
         self.__permissions = _ARGUS_SYSTEM.permissions()
@@ -760,7 +800,16 @@ class MainScreen(Screen):
         """
         Quits the application.
         """
-        self.app.exit(0)
+        self.ask_exit_confirmation()
+
+    @work(exclusive=True)
+    async def ask_exit_confirmation(self) -> None:
+        """
+        Asks the user to confirm exiting the application.
+        """
+        is_exit_confirmed = await self.app.push_screen_wait(ConfirmExitScreen())
+        if is_exit_confirmed:
+            self.app.exit(0)
 
 
 class MainApplication(App):
@@ -783,7 +832,7 @@ class MainApplication(App):
         text-align: center;
     }
 
-    #login-box {
+    #login-box, #confirm-exit-box {
         width: 60%;
         max-width: 60;
         min-width: 32;
@@ -792,20 +841,34 @@ class MainApplication(App):
         background: black;
     }
 
-    #title {
+    #title, #question {
         text-align: center;
         text-style: bold;
         margin-bottom: 1;
     }
 
-    Button {
+    #login-box Button {
         margin-top: 1;
         width: 100%;
+    }
+
+    #buttons {
+        align: center middle;
+        height: auto;
+    }
+    
+    #buttons Button {
+        margin: 0 1;
+        min-width: 8;
     }
 
     #status {
         margin-top: 1;
         height: 1;
+        text-align: center;
+    }
+
+    #hint {
         text-align: center;
     }
     """

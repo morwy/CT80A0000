@@ -950,10 +950,6 @@ class ChartScreen(Screen):
         """
         Renders the XY chart of radar detections.
         """
-        x_data = [detection.x for detection in self.detections]
-        y_data = [detection.y for detection in self.detections]
-        z_data = [detection.z for detection in self.detections]
-
         grouped = defaultdict(lambda: ([], []))
 
         for detection in self.detections:

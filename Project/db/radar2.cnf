@@ -1,0 +1,13 @@
+[mysqld]
+wsrep_on=ON
+wsrep_provider=/usr/lib/galera/libgalera_smm.so
+
+wsrep_cluster_name=radar_cluster
+wsrep_cluster_address=gcomm://radar1,radar2,radar3
+
+wsrep_node_name=radar2
+wsrep_node_address=radar2
+
+binlog_format=ROW
+default_storage_engine=InnoDB
+innodb_autoinc_lock_mode=2

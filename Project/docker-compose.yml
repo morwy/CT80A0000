@@ -8,51 +8,93 @@
 #   5 people = 5 databases
 #
 # --------------------------------------------------------------------------------------------------
+#
+# References:
+#   - https://github.com/hweidner/galera-docker (MIT)
+#   - https://github.com/mariadb-operator/mariadb-operator/blob/main/docs/galera.md
+#   - https://github.com/gkzz/mariadb-galera-cluster/blob/main/db01/conf.d/galera.cnf (MIT)
+#
+# --------------------------------------------------------------------------------------------------
+networks:
+  galera-net:
+    driver: bridge
+
 services:
   radar1:
-    image: mysql:8.0
-    container_name: radar1-db
+    image: mariadb:10.11
+    container_name: radar1
+    hostname: radar1
+    networks:
+      - galera-net
     ports:
       - "33061:3306"
     environment:
       MYSQL_ROOT_PASSWORD: SuperSecureMilitaryPassword
-      MYSQL_DATABASE: radar1_db
+      MYSQL_DATABASE: radar_db
+      MYSQL_USER: officer
+      MYSQL_PASSWORD: officerPassword
+      MARIADB_GALERA_CLUSTER_NAME: radar_cluster
+      MARIADB_GALERA_MARIABACKUP_USER: backup
+      MARIADB_GALERA_MARIABACKUP_PASSWORD: backup
+    command: ["--wsrep-new-cluster"]
     volumes:
-      - ./db/radar1/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./db/radar1:/var/lib/mysql
+      - ./db/radar1.cnf:/etc/mysql/conf.d/galera.cnf:ro
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-uroot", "-pSuperSecureMilitaryPassword"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   radar2:
-    image: mysql:8.0
-    container_name: radar2-db
+    image: mariadb:10.11
+    container_name: radar2
+    hostname: radar2
+    networks:
+      - galera-net
     ports:
       - "33062:3306"
     environment:
       MYSQL_ROOT_PASSWORD: SuperSecureMilitaryPassword
-      MYSQL_DATABASE: radar2_db
+      MARIADB_GALERA_CLUSTER_NAME: radar_cluster
+      MARIADB_GALERA_CLUSTER_JOIN: radar1
+      MARIADB_GALERA_MARIABACKUP_USER: backup
+      MARIADB_GALERA_MARIABACKUP_PASSWORD: backup
+    depends_on:
+      radar1:
+        condition: service_healthy
     volumes:
-      - ./db/radar2/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./db/radar2:/var/lib/mysql
+      - ./db/radar2.cnf:/etc/mysql/conf.d/galera.cnf:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-uroot", "-pSuperSecureMilitaryPassword"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   radar3:
-    image: mysql:8.0
-    container_name: radar3-db
+    image: mariadb:10.11
+    container_name: radar3
+    hostname: radar3
+    networks:
+      - galera-net
     ports:
       - "33063:3306"
     environment:
       MYSQL_ROOT_PASSWORD: SuperSecureMilitaryPassword
-      MYSQL_DATABASE: radar3_db
+      MARIADB_GALERA_CLUSTER_NAME: radar_cluster
+      MARIADB_GALERA_CLUSTER_JOIN: radar1
+      MARIADB_GALERA_MARIABACKUP_USER: backup
+      MARIADB_GALERA_MARIABACKUP_PASSWORD: backup
+    depends_on:
+      radar1:
+        condition: service_healthy
     volumes:
-      - ./db/radar3/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./db/radar3:/var/lib/mysql
+      - ./db/radar3.cnf:/etc/mysql/conf.d/galera.cnf:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-uroot", "-pSuperSecureMilitaryPassword"]
       interval: 5s
       timeout: 5s
       retries: 5

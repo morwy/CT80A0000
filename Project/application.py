@@ -154,6 +154,7 @@ class ArgusSystem:
 
     def __del__(self):
         _LOGGER.info("Shutting down database connector.")
+        self.logout()
         self.__disconnect_from_databases()
 
     def __connect_to_database(self):
@@ -303,6 +304,24 @@ class ArgusSystem:
                 f"Error during login for user '{username}': {e}",
             )
             return False
+
+    def logout(self) -> None:
+        """
+        Logs out the current user.
+        """
+        if self._user is None:
+            _LOGGER.warning("No user is currently logged in.")
+            return
+
+        username = self._user.username
+
+        self.log(
+            "USER_ACCOUNT",
+            "LOGOUT_SUCCESS",
+            f"User '{username}' logged out successfully.",
+        )
+
+        self._user = None
 
 
 _ARGUS_SYSTEM = ArgusSystem()

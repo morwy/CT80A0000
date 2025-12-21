@@ -1034,8 +1034,8 @@ class ChartScreen(Screen):
         plt.title(title)
         plt.xlabel("X")
         plt.ylabel("Y")
-        plt.xlim(-200, 200)
-        plt.ylim(-1000, 1000)
+        plt.xlim(-1000, 1000)
+        plt.ylim(-200, 200)
 
         for symbol, (xs, ys) in grouped.items():
             plt.scatter(xs, ys, marker=symbol)

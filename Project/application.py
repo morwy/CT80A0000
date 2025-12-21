@@ -447,6 +447,60 @@ class ArgusSystem:
             )
             return []
 
+    def update_detection(self, detection: _RadarDetection) -> bool:
+        """
+        Updates a radar detection entry in the database.
+
+        :param detection: The detection object to update.
+        :return: True if the update was successful, False otherwise.
+        """
+        self.log(
+            "RADAR_DETECTION",
+            "DETECTION_UPDATE_ATTEMPT",
+            f"Updating radar detection ID {detection.detection_id}.",
+        )
+
+        if self.__db_connection is None or not self.__db_connection.is_connected():
+            _LOGGER.error("Database connection is not established.")
+            return False
+
+        try:
+            cursor = self.__db_connection.cursor()
+            query = """
+                UPDATE RADAR_DETECTION
+                SET radar_id = %s, timestamp = %s, x = %s, y = %s, z = %s, reflection_rate = %s
+                WHERE detection_id = %s;
+            """
+            cursor.execute(
+                query,
+                (
+                    detection.radar_id,
+                    detection.timestamp,
+                    detection.x,
+                    detection.y,
+                    detection.z,
+                    detection.reflection_rate,
+                    detection.detection_id,
+                ),
+            )
+            self.__db_connection.commit()
+
+            self.log(
+                "RADAR_DETECTION",
+                "DETECTION_UPDATE_SUCCESS",
+                f"Updated radar detection ID {detection.detection_id} successfully.",
+            )
+
+            return True
+
+        except Error as e:
+            self.log(
+                "RADAR_DETECTION",
+                "DETECTION_UPDATE_ERROR",
+                f"Error updating radar detection ID {detection.detection_id}: {e}",
+            )
+            return False
+
 
 _ARGUS_SYSTEM = ArgusSystem()
 
@@ -555,16 +609,74 @@ class LogScreen(Screen):
         self.app.pop_screen()
 
 
+class EditCellScreen(ModalScreen[str]):
+    """
+    Screen to edit a cell value.
+    """
+
+    BINDINGS = [
+        Binding("enter", "save", "Save"),
+        Binding("escape", "cancel", "Cancel"),
+    ]
+
+    def __init__(self, value: str):
+        super().__init__()
+        self.value = value
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="editor-box"):
+            yield Static("Edit value:")
+            yield Input(value=self.value, id="input", compact=True)
+            with Horizontal(id="edit-buttons"):
+                yield Button("Save", id="save", variant="primary", compact=True)
+                yield Button("Cancel", id="cancel", compact=True)
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        """
+        Handles input submission.
+        """
+        self.dismiss(event.value)
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """
+        Handles button press events.
+        """
+        if event.button.id == "save":
+            input_field = self.query_one("#input", Input)
+            self.dismiss(input_field.value)
+        else:
+            self.dismiss(self.value)
+
+    def action_save(self) -> None:
+        """
+        Confirms exit.
+        """
+        input_field = self.query_one("#input", Input)
+        self.dismiss(input_field.value)
+
+    def action_cancel(self) -> None:
+        """
+        Cancels exit.
+        """
+        self.dismiss(self.value)
+
+
 class DetectionScreen(Screen):
     """
     Screen to display radar detections.
     """
 
     BINDINGS = [
+        Binding("enter", "edit", "Edit"),
+        Binding("e", "edit", "Edit"),
         Binding("escape", "close", "Close"),
         Binding("q", "close", "Close"),
         Binding("ctrl+q", "close", "Close"),
     ]
+
+    def __init__(self, permissions: _Permission):
+        super().__init__()
+        self.__permissions = permissions
 
     def compose(self):
         yield Header(show_clock=True)
@@ -604,6 +716,67 @@ class DetectionScreen(Screen):
                 str(detection.reflection_rate),
             ]
             table.add_row(*rows)
+
+    async def action_edit(self) -> None:
+        """
+        Edits the selected detection entry.
+        """
+        if self.__permissions is None or not self.__permissions.can_update:
+            _LOGGER.warning("User does not have permission to edit detections.")
+            _ARGUS_SYSTEM.log(
+                "AUDIT_LOG",
+                "UNAUTHORIZED_ACCESS",
+                "Attempted to edit detections without permission.",
+            )
+            self.notify(
+                message="You do not have permission to edit detections.",
+                severity="error",
+            )
+            return
+
+        table = self.query_one("#detection_table", DataTable)
+        if table.cursor_column == 0:
+            _LOGGER.warning("User does not have permission to edit detection IDs.")
+            _ARGUS_SYSTEM.log(
+                "AUDIT_LOG",
+                "UNAUTHORIZED_ACCESS",
+                "Attempted to edit detection ID without permission.",
+            )
+            self.notify(
+                message="You do not have permission to edit detection IDs.",
+                severity="error",
+            )
+            return
+
+        self.start_edit()
+
+    @work(exclusive=True)
+    async def start_edit(self) -> None:
+        """
+        Starts the edit process for the selected cell.
+        """
+        table = self.query_one("#detection_table", DataTable)
+        old_value = table.get_cell_at(table.cursor_coordinate)
+
+        new_value = await self.app.push_screen_wait(EditCellScreen(str(old_value)))
+        if new_value is None or new_value == old_value:
+            return
+
+        table.update_cell_at(table.cursor_coordinate, new_value)
+
+        row = table.get_row_at(table.cursor_row)
+
+        _ARGUS_SYSTEM.update_detection(
+            _RadarDetection(
+                detection_id=int(row[0]),
+                radar_id=int(row[1]),
+                timestamp=datetime.fromisoformat(row[2]),
+                x=float(row[3]),
+                y=float(row[4]),
+                z=float(row[5]),
+                reflection_rate=float(row[6]),
+            )
+        )
 
     def action_close(self) -> None:
         """
@@ -768,7 +941,7 @@ class MainScreen(Screen):
 
         detections = _ARGUS_SYSTEM.detections()
 
-        detection_screen = DetectionScreen()
+        detection_screen = DetectionScreen(self.__permissions)
         self.app.push_screen(detection_screen)
         detection_screen.load_data(detections)
 
@@ -832,7 +1005,7 @@ class MainApplication(App):
         text-align: center;
     }
 
-    #login-box, #confirm-exit-box {
+    #login-box, #confirm-exit-box, #editor-box {
         width: 60%;
         max-width: 60;
         min-width: 32;
@@ -852,23 +1025,24 @@ class MainApplication(App):
         width: 100%;
     }
 
-    #buttons {
+    #buttons, #edit-buttons {
         align: center middle;
         height: auto;
     }
-    
+
     #buttons Button {
         margin: 0 1;
         min-width: 8;
     }
 
+    #edit-buttons Button {
+        margin: 1 1;
+        min-width: 8;
+    }
+    
     #status {
         margin-top: 1;
         height: 1;
-        text-align: center;
-    }
-
-    #hint {
         text-align: center;
     }
     """

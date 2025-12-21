@@ -220,7 +220,7 @@ class ArgusSystem:
                 query,
                 (
                     datetime.now(),
-                    self._user.id if self._user is not None else 0,
+                    self._user.id if self._user is not None else None,
                     operation,
                     self.__current_radar_station_id,
                     table_name,

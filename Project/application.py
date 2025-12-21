@@ -912,22 +912,32 @@ class ChartScreen(Screen):
     """
 
     BINDINGS = [
+        Binding("right", "next", "Next"),
+        Binding("left", "previous", "Previous"),
         Binding("escape", "close", "Close"),
     ]
 
     def __init__(self, detections: List[_RadarDetection]):
         super().__init__()
         self.detections: List[_RadarDetection] = detections
+        self.unique_timestamps: List[datetime] = list(
+            sorted(
+                set(detection.timestamp for detection in detections),
+            )
+        )
+        self.timestamp_index = len(self.unique_timestamps) - 1
 
     def __reflection_to_symbol(self, rate: float) -> str:
         if rate < 0.3:
             return "."
-        elif rate < 0.6:
+
+        if rate < 0.6:
             return "o"
-        elif rate < 0.8:
+
+        if rate < 0.8:
             return "O"
-        else:
-            return "X"
+
+        return "X"
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
@@ -946,13 +956,42 @@ class ChartScreen(Screen):
         """
         self.render_chart()
 
+    def action_next(self) -> None:
+        """
+        Moves to the next detection.
+        """
+        if self.timestamp_index < len(self.unique_timestamps) - 1:
+            self.timestamp_index += 1
+        else:
+            self.timestamp_index = 0
+
+        self.render_chart()
+
+    def action_previous(self) -> None:
+        """
+        Moves to the previous detection.
+        """
+        if self.timestamp_index > 0:
+            self.timestamp_index -= 1
+        else:
+            self.timestamp_index = len(self.unique_timestamps) - 1
+
+        self.render_chart()
+
     def render_chart(self):
         """
         Renders the XY chart of radar detections.
         """
+        current_timestamp = self.unique_timestamps[self.timestamp_index]
+        filtered_detections = [
+            detection
+            for detection in self.detections
+            if detection.timestamp == current_timestamp
+        ]
+
         grouped = defaultdict(lambda: ([], []))
 
-        for detection in self.detections:
+        for detection in filtered_detections:
             symbol = self.__reflection_to_symbol(detection.reflection_rate)
             xs, ys = grouped[symbol]
             xs.append(detection.x)
@@ -966,9 +1005,13 @@ class ChartScreen(Screen):
 
         plt.plot_size(chart_width, chart_height)
         plt.theme("clear")
-        plt.title("XY Chart")
+
+        title = f"Radar Detections at {current_timestamp.isoformat()}"
+        plt.title(title)
         plt.xlabel("X")
         plt.ylabel("Y")
+        plt.xlim(-200, 200)
+        plt.ylim(-1000, 1000)
 
         for symbol, (xs, ys) in grouped.items():
             plt.scatter(xs, ys, marker=symbol)

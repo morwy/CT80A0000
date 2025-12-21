@@ -223,9 +223,9 @@ INSERT INTO AUDIT_LOG (log_id, timestamp, user_id, operation, radar_station, tab
 (23, '2025-01-01 11:46:00',1,'LOGIN_FAILURE',3,'USER_ACCOUNT','User failed to log in.'),
 (24, '2025-01-01 11:45:00',1,'LOGIN_ATTEMPT',6,'USER_ACCOUNT','Unauthorized user attempted to log in.'),
 (25, '2025-01-01 11:46:00',1,'LOGIN_FAILURE',3,'USER_ACCOUNT','User failed to log in.'),
-(25, '2025-01-01 11:46:00',8,'LOGOUT_SUCCESS',1,'USER_ACCOUNT','User logged out.'),
-(26, '2025-01-01 11:50:00',9,'LOGOUT_SUCCESS',2,'USER_ACCOUNT','User logged out.'),
-(27, '2025-01-01 11:55:00',10,'LOGOUT_SUCCESS',3,'USER_ACCOUNT','User logged out.'),
-(28, '2025-01-01 12:00:00',11,'LOGOUT_SUCCESS',4,'USER_ACCOUNT','User logged out.'),
-(29, '2025-01-01 12:05:00',12,'LOGOUT_SUCCESS',5,'USER_ACCOUNT','User logged out.'),
-(30, '2025-01-01 12:10:00',8,'LOGIN_SUCCESS',6,'USER_ACCOUNT','User logged in.');
+(26, '2025-01-01 11:46:00',8,'LOGOUT_SUCCESS',1,'USER_ACCOUNT','User logged out.'),
+(27, '2025-01-01 11:50:00',9,'LOGOUT_SUCCESS',2,'USER_ACCOUNT','User logged out.'),
+(28, '2025-01-01 11:55:00',10,'LOGOUT_SUCCESS',3,'USER_ACCOUNT','User logged out.'),
+(29, '2025-01-01 12:00:00',11,'LOGOUT_SUCCESS',4,'USER_ACCOUNT','User logged out.'),
+(30, '2025-01-01 12:05:00',12,'LOGOUT_SUCCESS',5,'USER_ACCOUNT','User logged out.'),
+(31, '2025-01-01 12:10:00',8,'LOGIN_SUCCESS',6,'USER_ACCOUNT','User logged in.');

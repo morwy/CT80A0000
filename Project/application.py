@@ -7,6 +7,7 @@
 # --------------------------------------------------------------------------------------------------
 import logging
 import os
+from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import List, Union
@@ -953,7 +954,13 @@ class ChartScreen(Screen):
         y_data = [detection.y for detection in self.detections]
         z_data = [detection.z for detection in self.detections]
 
-        chart_container = self.query_one("#chart", Static)
+        grouped = defaultdict(lambda: ([], []))
+
+        for detection in self.detections:
+            symbol = self.__reflection_to_symbol(detection.reflection_rate)
+            xs, ys = grouped[symbol]
+            xs.append(detection.x)
+            ys.append(detection.y)
 
         plt.clear_data()
         plt.clear_figure()
@@ -967,12 +974,15 @@ class ChartScreen(Screen):
         plt.xlabel("X")
         plt.ylabel("Y")
 
-        plt.scatter(x_data, y_data, color=z_data, marker="dot")
+        for symbol, (xs, ys) in grouped.items():
+            plt.scatter(xs, ys, marker=symbol)
+
         plt.grid(True)
 
         chart = plt.build()
         plt.clear_data()
 
+        chart_container = self.query_one("#chart", Static)
         chart_container.update(chart)
 
     def action_close(self) -> None:

@@ -1154,7 +1154,7 @@ class MainScreen(Screen):
         """
         Called when the screen is unmounted.
         """
-        global _ARGUS_SYSTEM
+        global _ARGUS_SYSTEM  # pylint: disable=global-statement
         del _ARGUS_SYSTEM
 
     @work(exclusive=True)

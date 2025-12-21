@@ -21,14 +21,14 @@ CREATE TABLE RADAR_DETECTION(
 
 CREATE TABLE USER_GROUP(
     group_id INT PRIMARY KEY AUTO_INCREMENT,
-    group_name VARCHAR(50),
+    group_name VARCHAR(255),
     description VARCHAR(255)
 );
 
 CREATE TABLE USER_ACCOUNT(
     user_id INT PRIMARY KEY AUTO_INCREMENT,
     group_id INT,
-    username VARCHAR(50),
+    username VARCHAR(255),
     password_hash VARCHAR(255),
     radar_station INT,
     FOREIGN KEY (group_id) REFERENCES USER_GROUP(group_id)
@@ -48,9 +48,9 @@ CREATE TABLE AUDIT_LOG(
     log_id BIGINT PRIMARY KEY AUTO_INCREMENT,
     timestamp DATETIME,
     user_id INT,
-    operation VARCHAR(20),
+    operation VARCHAR(255),
     radar_station INT,
-    table_name VARCHAR(50),
+    table_name VARCHAR(255),
     description VARCHAR(255),
     FOREIGN KEY (user_id) REFERENCES USER_ACCOUNT(user_id)
 );

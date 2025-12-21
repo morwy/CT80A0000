@@ -264,7 +264,7 @@ class ArgusSystem:
                 )
                 return False
 
-            user_group: int = int(user_entry[1])
+            user_group: int = int(user_entry[1])  # type: ignore
 
             query = f"SELECT group_id, group_name, description FROM USER_GROUP WHERE group_id = {user_group};"
             cursor.execute(query)
@@ -275,16 +275,16 @@ class ArgusSystem:
             permission_entry = cursor.fetchone()
 
             user = _UserInformation()
-            user.id = int(user_entry[0])
-            user.group.id = int(group_entry[0])
-            user.group.name = group_entry[1]
-            user.group.description = group_entry[2]
+            user.id = int(user_entry[0])  # type: ignore
+            user.group.id = int(group_entry[0])  # type: ignore
+            user.group.name = group_entry[1]  # type: ignore
+            user.group.description = group_entry[2]  # type: ignore
             user.username = username
             user.password = password
-            user.permissions.can_select = bool(permission_entry[0])
-            user.permissions.can_insert = bool(permission_entry[1])
-            user.permissions.can_update = bool(permission_entry[2])
-            user.permissions.can_delete = bool(permission_entry[3])
+            user.permissions.can_select = bool(permission_entry[0])  # type: ignore
+            user.permissions.can_insert = bool(permission_entry[1])  # type: ignore
+            user.permissions.can_update = bool(permission_entry[2])  # type: ignore
+            user.permissions.can_delete = bool(permission_entry[3])  # type: ignore
 
             self._user = user
 

@@ -16,7 +16,7 @@ from mysql.connector import Error
 from textual import work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Center, Vertical
+from textual.containers import CenterMiddle, Vertical
 from textual.screen import ModalScreen, Screen
 from textual.widgets import Button, Footer, Header, Input, Static
 
@@ -87,7 +87,7 @@ class _Permission:
     """
 
     id: int = 0
-    can_select: bool = False
+    can_view: bool = False
     can_insert: bool = False
     can_update: bool = False
     can_delete: bool = False
@@ -284,7 +284,7 @@ class ArgusSystem:
             user.group.description = group_entry[2]  # type: ignore
             user.username = username
             user.password = password
-            user.permissions.can_select = bool(permission_entry[0])  # type: ignore
+            user.permissions.can_view = bool(permission_entry[0])  # type: ignore
             user.permissions.can_insert = bool(permission_entry[1])  # type: ignore
             user.permissions.can_update = bool(permission_entry[2])  # type: ignore
             user.permissions.can_delete = bool(permission_entry[3])  # type: ignore
@@ -324,6 +324,24 @@ class ArgusSystem:
         )
 
         self._user = None
+
+    def permissions(self) -> _Permission | None:
+        """
+        Returns the permissions of the currently logged-in user.
+
+        :return: The permissions of the user, or None if no user is logged in.
+        """
+        self.log(
+            "USER_ACCOUNT",
+            "PERMISSIONS_REQUEST",
+            f"Requesting permissions for user '{self._user.username if self._user else 'None'}'.",
+        )
+
+        if self._user is None:
+            _LOGGER.warning("No user is currently logged in.")
+            return None
+
+        return self._user.permissions
 
 
 _ARGUS_SYSTEM = ArgusSystem()
@@ -382,13 +400,47 @@ class MainScreen(Screen):
     """
 
     BINDINGS = [
-        Binding("t", "test", "Test Action"),
-        Binding("escape", "quit", "Quit"),
+        Binding("l", "log", "View Logs"),
+        Binding("d", "detections", "View Detections"),
+        Binding("m", "map", "View Map"),
+        Binding("o", "logout", "Logout"),
+        Binding("q", "quit", "Quit"),
+        Binding("ctrl+q", "quit", "Quit"),
     ]
 
+    def __init__(self):
+        super().__init__()
+        self.__permissions: _Permission | None = None  # type: ignore
+
     def compose(self) -> ComposeResult:
+        #
+        # ASCII art logo from: https://emojicombos.com/eye-ascii-art
+        # License is not specified, assumed to be public domain.
+        #
+        logo = """
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣠⣤⣴⡶⠶⠾⠟⠛⠛⠛⠛⠷⠶⣦⣤⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣶⠿⠛⠉⣁⣠⠤⠤⠀⠀⠀⠀⠀⠀⠀⠘⠷⢬⣙⡛⠷⣦⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⡶⠟⢉⣠⠴⠚⠉⠁⣀⡀⠠⠀⠐⠂⠀⠀⠀⠀⠀⠀⠀⠀⠉⠓⠦⣍⡻⢷⣤⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣴⠿⢋⡤⠞⢉⣠⡤⠖⢚⣉⣁⣤⣤⣴⣦⣤⣤⣄⣀⣀⠀⠀⠘⠲⢤⡀⠀⠈⠙⠲⣌⡛⢷⣤⡀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⢀⣤⡾⢋⣡⠞⣋⠴⠚⣉⣥⡴⠾⠟⠛⢉⣉⣀⣠⣤⣤⣭⣍⣉⣛⡻⠶⣦⣤⣀⠉⠓⠦⣄⠀⠀⠙⢦⡉⠻⣦⡀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⣀⣴⠟⢁⣴⣫⠷⢛⣡⣴⠟⠋⣁⣤⣴⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⠿⠿⣿⣶⣬⣝⡻⢶⣤⡀⠙⠂⢀⠀⠘⠢⡈⠻⣶⣄⠀⠀⠀
+⠀⠀⠀⠀⣠⡾⠛⠁⢠⡿⠛⣡⣶⠟⢋⣤⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣀⣤⣤⠀⠻⣿⣿⣿⣷⣮⣟⠷⣦⣜⠀⠀⠀⠀⠀⠈⠛⢷⣄⠀
+⠀⢀⣰⡾⠋⠀⠀⠀⢋⣴⠿⢋⣦⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⡇⠈⣿⢿⣿⣿⣿⣿⣾⣝⡻⣦⣄⠀⠀⠀⠀⠀⠙⠷
+⣰⡿⠋⠀⠀⠀⣠⡾⢛⣡⣶⡿⠛⣿⣿⣿⣿⠻⣿⠸⣏⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⡇⠀⣿⠈⢻⣿⢿⣿⢿⣿⣿⣷⣭⣀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⣤⣾⣯⣴⡿⠛⠋⠀⠀⢹⡼⣿⣿⠀⢿⡀⠉⠈⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢣⡇⢀⡿⠀⣸⡏⢸⡟⢘⣿⠁⠙⠛⣻⣷⠀⢸⡆⠀⠀
+⠀⠀⠀⠘⣯⣾⡟⢷⡄⠀⠀⠀⠀⠀⠀⠙⢿⣆⠘⣷⡀⠀⠀⠙⠿⣿⣿⣿⣿⣿⣿⣿⡿⢋⡾⢀⡼⠁⣰⡟⠀⠞⠁⢸⡏⠀⢀⣴⣿⠁⠀⣸⠇⠀⠀
+⠀⠀⣰⣿⢛⣿⡇⠘⠃⠀⠀⠀⠀⠀⠀⠀⠈⠻⣧⣈⠃⠀⠀⠀⠀⠀⠈⠉⠛⠛⠋⠉⠴⠋⣠⠞⢀⣼⠏⠀⠀⠀⠀⡞⢀⣴⣿⣿⠏⠀⠀⠁⠀⠀⠀
+⠀⠀⠙⠛⠛⠛⠿⠿⣷⣦⣄⡐⢦⣀⠀⠀⠀⠀⠈⠛⢷⣦⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⢠⢞⣡⣴⠟⠁⠀⠀⠀⢀⣠⣾⣿⣿⠟⡁⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⡀⠀⠀⠀⠀⠀⠀⠈⠙⠻⢶⣭⣟⡦⣤⣀⡀⠀⠀⠉⠛⠻⠿⠶⣶⣤⣤⣤⣶⣶⠿⠟⠋⠀⠀⠀⢀⣠⣶⣿⣿⡿⠋⣠⣾⠇⣠⠀⠀⠀⠀⠀⠀
+⠀⠘⠛⠛⠛⠛⠻⢷⣦⣀⠀⠀⠀⠈⠉⠛⠷⢮⣽⣓⡲⠤⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣤⣶⣿⣿⡿⠛⠉⢁⣴⠟⢡⡾⠃⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠸⣄⡈⠛⠿⣶⣤⣄⡀⠀⠀⠀⠀⠉⠙⠛⠿⠷⣶⣦⣤⣤⣤⣤⣴⣶⣶⡿⠿⠿⠟⠛⠋⠁⢀⣠⡾⠛⢁⡴⠋⣠⠆⢀⡴⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⢻⣌⡛⠶⣤⣀⠈⠙⠛⠿⢶⣦⣤⣄⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣤⣾⠟⠋⣠⡶⢋⡠⠞⠁⠠⠋⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠷⣍⡛⠳⢶⣭⠅⠀⠀⠀⠀⠀⠈⠉⢛⠛⠿⠷⢶⣶⣦⣤⣤⣤⣤⣤⣤⣴⣶⡾⠟⠛⠉⠀⠀⠚⠡⠖⣋⡤⠖⠉⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠉⠙⠓⠃⠀⠀⠀⠀⠀⠀⠀⠀⠈⠳⣶⠦⠤⠤⠤⠤⣄⠀⢀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀   
+"""
+
         yield Header(name="ARGUS PANOPTES RADAR SYSTEM", show_clock=True)
-        yield Center(Static("MAIN APPLICATION\nPress Esc to quit"))
+        yield CenterMiddle(Static(logo, id="logo", expand=True))
         yield Footer()
 
     def on_mount(self) -> None:
@@ -409,9 +461,76 @@ class MainScreen(Screen):
         """
         Starts the login process.
         """
-        ok = await self.app.push_screen_wait(LoginScreen())
-        if not ok:
+        authenticated = await self.app.push_screen_wait(LoginScreen())
+        if not authenticated:
             self.app.exit(1)
+
+        self.__permissions = _ARGUS_SYSTEM.permissions()
+        if self.__permissions is None:
+            self.app.exit(1)
+
+    def action_log(self) -> None:
+        """
+        Views the logs.
+        """
+        if self.__permissions is None or not self.__permissions.can_view:
+            _LOGGER.warning("User does not have permission to view logs.")
+            _ARGUS_SYSTEM.log(
+                "AUDIT_LOG",
+                "UNAUTHORIZED_ACCESS",
+                "Attempted to view logs without permission.",
+            )
+            self.notify(
+                message="You do not have permission to view logs.", severity="error"
+            )
+            return
+
+    def action_detections(self) -> None:
+        """
+        Views the radar detections.
+        """
+        if self.__permissions is None or not self.__permissions.can_view:
+            _LOGGER.warning("User does not have permission to view detections.")
+            _ARGUS_SYSTEM.log(
+                "RADAR_DETECTION",
+                "UNAUTHORIZED_ACCESS",
+                "Attempted to view detections without permission.",
+            )
+            self.notify(
+                message="You do not have permission to view detections.",
+                severity="error",
+            )
+            return
+
+    def action_map(self) -> None:
+        """
+        Views the radar map.
+        """
+        if self.__permissions is None or not self.__permissions.can_view:
+            _LOGGER.warning("User does not have permission to view detections on map.")
+            _ARGUS_SYSTEM.log(
+                "RADAR_DETECTION",
+                "UNAUTHORIZED_ACCESS",
+                "Attempted to view detections on map without permission.",
+            )
+            self.notify(
+                message="You do not have permission to view detections on map.",
+                severity="error",
+            )
+            return
+
+    def action_logout(self) -> None:
+        """
+        Logs out the current user.
+        """
+        _ARGUS_SYSTEM.logout()
+        self.start_login()
+
+    def action_quit(self):
+        """
+        Quits the application.
+        """
+        self.app.exit(0)
 
 
 class MainApplication(App):
@@ -428,6 +547,10 @@ class MainApplication(App):
     
     Screen {
         align: center middle;
+    }
+
+    #logo {
+        text-align: center;
     }
 
     #login-box {

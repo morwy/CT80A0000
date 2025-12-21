@@ -395,6 +395,58 @@ class ArgusSystem:
             )
             return []
 
+    def detections(self) -> List[_RadarDetection]:
+        """
+        Retrieves radar detection entries from the database.
+
+        :return: A list of radar detection entries.
+        """
+        self.log(
+            "RADAR_DETECTION",
+            "DETECTION_RETRIEVAL_ATTEMPT",
+            "Retrieving radar detections.",
+        )
+
+        if self.__db_connection is None or not self.__db_connection.is_connected():
+            _LOGGER.error("Database connection is not established.")
+            return []
+
+        try:
+            cursor = self.__db_connection.cursor()
+            query = "SELECT detection_id, radar_id, timestamp, x, y, z, reflection_rate FROM RADAR_DETECTION ORDER BY detection_id DESC;"
+            cursor.execute(query)
+            detection_entries = cursor.fetchall()
+
+            detections: List[_RadarDetection] = []
+
+            for entry in detection_entries:
+                detection = _RadarDetection()
+                detection.detection_id = int(entry[0])  # type: ignore
+                detection.radar_id = int(entry[1])  # type: ignore
+                detection.timestamp = entry[2]  # type: ignore
+                detection.x = float(entry[3])  # type: ignore
+                detection.y = float(entry[4])  # type: ignore
+                detection.z = float(entry[5])  # type: ignore
+                detection.reflection_rate = float(entry[6])  # type: ignore
+
+                detections.append(detection)
+
+            self.log(
+                "RADAR_DETECTION",
+                "DETECTION_RETRIEVAL_SUCCESS",
+                f"Retrieved {len(detections)} radar detection entries.",
+            )
+
+            return detections
+
+        except Error as e:
+            self.log(
+                "RADAR_DETECTION",
+                "DETECTION_RETRIEVAL_ERROR",
+                f"Error retrieving radar detections: {e}",
+            )
+            return []
+
 
 _ARGUS_SYSTEM = ArgusSystem()
 
@@ -493,6 +545,63 @@ class LogScreen(Screen):
                 str(log.radar_station),
                 str(log.table_name),
                 str(log.description),
+            ]
+            table.add_row(*rows)
+
+    def action_close(self) -> None:
+        """
+        Closes the log screen.
+        """
+        self.app.pop_screen()
+
+
+class DetectionScreen(Screen):
+    """
+    Screen to display radar detections.
+    """
+
+    BINDINGS = [
+        Binding("escape", "close", "Close"),
+        Binding("q", "close", "Close"),
+        Binding("ctrl+q", "close", "Close"),
+    ]
+
+    def compose(self):
+        yield Header(show_clock=True)
+        yield Center(DataTable(id="detection_table"))
+        yield Footer()
+
+    @work(exclusive=True)
+    async def load_data(self, detections: List[_RadarDetection]) -> None:
+        """
+        Loads detection data into the table.
+
+        :param detections: List of detection entries to display.
+        """
+        columns = [
+            "ID",
+            "Radar ID",
+            "Timestamp",
+            "X",
+            "Y",
+            "Z",
+            "Reflection Rate",
+        ]
+
+        table = self.query_one("#detection_table", DataTable)
+
+        table.clear(columns=True)
+        table.add_columns(*columns)
+
+        for detection in detections:
+            rows = [
+                str(detection.detection_id),
+                str(detection.radar_id),
+                str(detection.timestamp),
+                str(detection.x),
+                str(detection.y),
+                str(detection.z),
+                str(detection.reflection_rate),
             ]
             table.add_row(*rows)
 
@@ -616,6 +725,12 @@ class MainScreen(Screen):
                 severity="error",
             )
             return
+
+        detections = _ARGUS_SYSTEM.detections()
+
+        detection_screen = DetectionScreen()
+        self.app.push_screen(detection_screen)
+        detection_screen.load_data(detections)
 
     def action_map(self) -> None:
         """

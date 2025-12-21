@@ -501,6 +501,45 @@ class ArgusSystem:
             )
             return False
 
+    def delete_detection(self, detection_id: int) -> bool:
+        """
+        Deletes a radar detection entry from the database.
+
+        :param detection_id: The ID of the detection to delete.
+        :return: True if the deletion was successful, False otherwise.
+        """
+        self.log(
+            "RADAR_DETECTION",
+            "DETECTION_DELETE_ATTEMPT",
+            f"Deleting radar detection ID {detection_id}.",
+        )
+
+        if self.__db_connection is None or not self.__db_connection.is_connected():
+            _LOGGER.error("Database connection is not established.")
+            return False
+
+        try:
+            cursor = self.__db_connection.cursor()
+            query = "DELETE FROM RADAR_DETECTION WHERE detection_id = %s;"
+            cursor.execute(query, (detection_id,))
+            self.__db_connection.commit()
+
+            self.log(
+                "RADAR_DETECTION",
+                "DETECTION_DELETE_SUCCESS",
+                f"Deleted radar detection ID {detection_id} successfully.",
+            )
+
+            return True
+
+        except Error as e:
+            self.log(
+                "RADAR_DETECTION",
+                "DETECTION_DELETE_ERROR",
+                f"Error deleting radar detection ID {detection_id}: {e}",
+            )
+            return False
+
 
 _ARGUS_SYSTEM = ArgusSystem()
 
@@ -661,6 +700,46 @@ class EditCellScreen(ModalScreen[str]):
         self.dismiss(self.value)
 
 
+class ConfirmDeleteCellScreen(ModalScreen[bool]):
+    """
+    Confirmation screen for deleting a cell.
+    """
+
+    BINDINGS = [
+        Binding("y", "yes", "Yes"),
+        Binding("n", "no", "No"),
+        Binding("escape", "no", "Cancel"),
+    ]
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="confirm-delete-box"):
+            yield Static("Do you really want to delete this cell?", id="question")
+            with Horizontal(id="delete-buttons"):
+                yield Button("Yes", id="yes", variant="error", compact=True)
+                yield Button("No", id="no", variant="primary", compact=True)
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        """
+        Handles button press events.
+        """
+        if event.button.id == "yes":
+            self.dismiss(True)
+        else:
+            self.dismiss(False)
+
+    def action_yes(self) -> None:
+        """
+        Confirms deletion.
+        """
+        self.dismiss(True)
+
+    def action_no(self) -> None:
+        """
+        Cancels deletion.
+        """
+        self.dismiss(False)
+
+
 class DetectionScreen(Screen):
     """
     Screen to display radar detections.
@@ -669,6 +748,8 @@ class DetectionScreen(Screen):
     BINDINGS = [
         Binding("enter", "edit", "Edit"),
         Binding("e", "edit", "Edit"),
+        Binding("d", "delete", "Delete"),
+        Binding("delete", "delete", "Delete"),
         Binding("escape", "close", "Close"),
         Binding("q", "close", "Close"),
         Binding("ctrl+q", "close", "Close"),
@@ -777,6 +858,44 @@ class DetectionScreen(Screen):
                 reflection_rate=float(row[6]),
             )
         )
+
+    async def action_delete(self) -> None:
+        """
+        Deletes the selected detection entry.
+        """
+        if self.__permissions is None or not self.__permissions.can_delete:
+            _LOGGER.warning("User does not have permission to delete detections.")
+            _ARGUS_SYSTEM.log(
+                "AUDIT_LOG",
+                "UNAUTHORIZED_ACCESS",
+                "Attempted to delete detections without permission.",
+            )
+            self.notify(
+                message="You do not have permission to delete detections.",
+                severity="error",
+            )
+            return
+
+        self.start_delete()
+
+    @work(exclusive=True)
+    async def start_delete(self) -> None:
+        """
+        Starts the delete process for the selected cell.
+        """
+        table = self.query_one("#detection_table", DataTable)
+        row = table.get_row_at(table.cursor_row)
+        detection_id = int(row[0])
+
+        is_deletion_confirmed = await self.app.push_screen_wait(
+            ConfirmDeleteCellScreen()
+        )
+        if not is_deletion_confirmed:
+            return
+
+        _ARGUS_SYSTEM.delete_detection(detection_id)
+        detections = _ARGUS_SYSTEM.detections()
+        self.load_data(detections)
 
     def action_close(self) -> None:
         """
@@ -1005,7 +1124,7 @@ class MainApplication(App):
         text-align: center;
     }
 
-    #login-box, #confirm-exit-box, #editor-box {
+    #login-box, #confirm-exit-box, #editor-box, #confirm-delete-box {
         width: 60%;
         max-width: 60;
         min-width: 32;
@@ -1025,12 +1144,12 @@ class MainApplication(App):
         width: 100%;
     }
 
-    #buttons, #edit-buttons {
+    #buttons, #edit-buttons, #delete-buttons {
         align: center middle;
         height: auto;
     }
 
-    #buttons Button {
+    #buttons Button, #delete-buttons Button {
         margin: 0 1;
         min-width: 8;
     }

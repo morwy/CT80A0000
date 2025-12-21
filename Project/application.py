@@ -5,6 +5,7 @@
 # Imports.
 #
 # --------------------------------------------------------------------------------------------------
+import asyncio
 import logging
 import os
 from collections import defaultdict
@@ -913,19 +914,24 @@ class ChartScreen(Screen):
 
     BINDINGS = [
         Binding("right", "next", "Next"),
+        Binding("enter", "play", "Play/Pause"),
         Binding("left", "previous", "Previous"),
         Binding("escape", "close", "Close"),
     ]
 
     def __init__(self, detections: List[_RadarDetection]):
         super().__init__()
-        self.detections: List[_RadarDetection] = detections
-        self.unique_timestamps: List[datetime] = list(
+
+        self.__detections: List[_RadarDetection] = detections
+        self.__unique_timestamps: List[datetime] = list(
             sorted(
                 set(detection.timestamp for detection in detections),
             )
         )
-        self.timestamp_index = len(self.unique_timestamps) - 1
+        self.__timestamp_index = len(self.__unique_timestamps) - 1
+
+        self.__running: bool = False
+        self.__task: asyncio.Task | None = None
 
     def __reflection_to_symbol(self, rate: float) -> str:
         if rate < 0.3:
@@ -938,6 +944,11 @@ class ChartScreen(Screen):
             return "O"
 
         return "X"
+
+    async def __update_loop(self):
+        while self.__running:
+            self.action_next()
+            await asyncio.sleep(0.5)
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
@@ -960,10 +971,10 @@ class ChartScreen(Screen):
         """
         Moves to the next detection.
         """
-        if self.timestamp_index < len(self.unique_timestamps) - 1:
-            self.timestamp_index += 1
+        if self.__timestamp_index < len(self.__unique_timestamps) - 1:
+            self.__timestamp_index += 1
         else:
-            self.timestamp_index = 0
+            self.__timestamp_index = 0
 
         self.render_chart()
 
@@ -971,21 +982,34 @@ class ChartScreen(Screen):
         """
         Moves to the previous detection.
         """
-        if self.timestamp_index > 0:
-            self.timestamp_index -= 1
+        if self.__timestamp_index > 0:
+            self.__timestamp_index -= 1
         else:
-            self.timestamp_index = len(self.unique_timestamps) - 1
+            self.__timestamp_index = len(self.__unique_timestamps) - 1
 
         self.render_chart()
+
+    async def action_play(self) -> None:
+        """
+        Toggles play/pause of the detection animation.
+        """
+        if not self.__running:
+            self.__running = True
+            self.__task = asyncio.create_task(self.__update_loop())
+        else:
+            self.__running = False
+            if self.__task is not None:
+                self.__task.cancel()
+                self.__task = None
 
     def render_chart(self):
         """
         Renders the XY chart of radar detections.
         """
-        current_timestamp = self.unique_timestamps[self.timestamp_index]
+        current_timestamp = self.__unique_timestamps[self.__timestamp_index]
         filtered_detections = [
             detection
-            for detection in self.detections
+            for detection in self.__detections
             if detection.timestamp == current_timestamp
         ]
 
